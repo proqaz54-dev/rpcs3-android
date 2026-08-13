@@ -1,3 +1,14 @@
+RPCS3-Android (AI Port)
+=======================
+
+**This is an experimental fork of RPCS3 aimed at a native Android (arm64-v8a) port, developed with AI assistance (opencode agent).**
+
+> ⚠️ **AI disclosure**: This project is a fork of [RPCS3](https://github.com/RPCS3/rpcs3) (GPLv2) and is developed with heavy use of AI tools. All code changes should be reviewed and understood by a human before being merged. This is an experimental project — expect breakage.
+
+Base: upstream RPCS3 master (Linux/ARM64 build). Goal: native PS3 emulation on Android devices via Vulkan + ARM64 JIT (LLVM/SPU recompiler).
+
+---
+
 RPCS3
 =====
 
