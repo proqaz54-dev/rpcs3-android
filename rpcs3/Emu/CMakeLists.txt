@@ -60,13 +60,18 @@ target_include_directories(rpcs3_emu
         ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty
 )
 
+if(ANDROID)
+    target_include_directories(rpcs3_emu
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/ffmpeg/android-stub
+    )
+endif()
+
 # Utilities
 target_sources(rpcs3_emu PRIVATE
     ../util/atomic.cpp
     ../util/console.cpp
     ../util/emu_utils.cpp
-    ../util/media_utils.cpp
-    ../util/video_provider.cpp
     ../util/logs.cpp
     ../util/yaml.cpp
     ../util/vm_native.cpp
@@ -249,11 +254,9 @@ target_sources(rpcs3_emu PRIVATE
     Cell/Modules/cellAdec.cpp
     Cell/Modules/cellAtrac.cpp
     Cell/Modules/cellAtracMulti.cpp
-    Cell/Modules/cellAtracXdec.cpp
     Cell/Modules/cellAudio.cpp
     Cell/Modules/cellAudioOut.cpp
     Cell/Modules/cellAuthDialog.cpp
-    Cell/Modules/cellAvconfExt.cpp
     Cell/Modules/cellBgdl.cpp
     Cell/Modules/cellCamera.cpp
     Cell/Modules/cellCelp8Enc.cpp
@@ -282,7 +285,6 @@ target_sources(rpcs3_emu PRIVATE
     Cell/Modules/cellKey2char.cpp
     Cell/Modules/cellL10n.cpp
     Cell/Modules/cellLibprof.cpp
-    Cell/Modules/cellMic.cpp
     Cell/Modules/cellMouse.cpp
     Cell/Modules/cellMsgDialog.cpp
     Cell/Modules/cellMusic.cpp
@@ -302,13 +304,11 @@ target_sources(rpcs3_emu PRIVATE
     Cell/Modules/cellPngDec.cpp
     Cell/Modules/cellPngEnc.cpp
     Cell/Modules/cellPrint.cpp
-    Cell/Modules/cellRec.cpp
     Cell/Modules/cellRemotePlay.cpp
     Cell/Modules/cellResc.cpp
     Cell/Modules/cellRtcAlarm.cpp
     Cell/Modules/cellRtc.cpp
     Cell/Modules/cellRudp.cpp
-    Cell/Modules/cellSail.cpp
     Cell/Modules/cellSailRec.cpp
     Cell/Modules/cellSaveData.cpp
     Cell/Modules/cellScreenshot.cpp
@@ -336,13 +336,11 @@ target_sources(rpcs3_emu PRIVATE
     Cell/Modules/cellUsbd.cpp
     Cell/Modules/cellUsbpspcm.cpp
     Cell/Modules/cellUserInfo.cpp
-    Cell/Modules/cellVdec.cpp
     Cell/Modules/cellVideoExport.cpp
     Cell/Modules/cellVideoOut.cpp
     Cell/Modules/cellVideoPlayerUtility.cpp
     Cell/Modules/cellVideoUpload.cpp
     Cell/Modules/cellVoice.cpp
-    Cell/Modules/cellVpost.cpp
     Cell/Modules/cellWebBrowser.cpp
     Cell/Modules/HLE_PATCHES.cpp
     Cell/Modules/libad_async.cpp

@@ -3,6 +3,8 @@
 #include "rsx_methods.h"
 #include "Emu/Cell/Modules/cellVideoOut.h"
 
+#ifdef ANDROID
+#else
 #ifdef _MSC_VER
 #pragma warning(push, 0)
 #else
@@ -21,6 +23,7 @@ extern "C"
 #else
 #pragma GCC diagnostic pop
 #endif
+#endif
 
 #include "util/sysinfo.hpp"
 
@@ -31,10 +34,24 @@ namespace rsx
 	void convert_scale_image(u8 *dst, AVPixelFormat dst_format, int dst_width, int dst_height, int dst_pitch,
 		const u8 *src, AVPixelFormat src_format, int src_width, int src_height, int src_pitch, int src_slice_h, bool bilinear)
 	{
+#ifdef ANDROID
+		if (src_format == dst_format)
+		{
+			for (int y = 0; y < src_slice_h; y++)
+			{
+				std::memcpy(dst + y * dst_pitch, src + y * src_pitch, src_pitch);
+			}
+		}
+		else
+		{
+			std::memset(dst, 0, dst_pitch * dst_height);
+		}
+#else
 		std::unique_ptr<SwsContext, void(*)(SwsContext*)> sws(sws_getContext(src_width, src_height, src_format,
 			dst_width, dst_height, dst_format, bilinear ? SWS_FAST_BILINEAR : SWS_POINT, nullptr, nullptr, nullptr), sws_freeContext);
 
 		sws_scale(sws.get(), &src, &src_pitch, 0, src_slice_h, &dst, &dst_pitch);
+#endif
 	}
 
 	void clip_image(u8 *dst, const u8 *src, int clip_x, int clip_y, int clip_w, int clip_h, int bpp, int src_pitch, int dst_pitch)

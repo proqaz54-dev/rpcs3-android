@@ -1,7 +1,6 @@
 # Android entry point for RPCS3.
-# Currently builds the JNI bridge and Android callbacks only.
-# The emulator core (rpcs3_emu) will be pulled in from the parent
-# RPCS3 CMake tree once the toolchain setup is verified.
+# Builds the JNI bridge and Android callbacks, linked against the
+# core RPCS3 static library built by the parent CMake tree.
 
 cmake_minimum_required(VERSION 3.22.1)
 project(rpcs3_android LANGUAGES C CXX)
@@ -9,13 +8,22 @@ project(rpcs3_android LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(NOT DEFINED RPCS3_BUILD_DIR)
+    set(RPCS3_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../build-android")
+endif()
+
 add_library(rpcs3_android SHARED
     rpcs3_android_jni.cpp
     android_callbacks.cpp
 )
 
 target_include_directories(rpcs3_android PRIVATE
-    ${CMAKE_SOURCE_DIR}/../../../../rpcs3
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../rpcs3
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../3rdparty
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../3rdparty/ffmpeg/android-stub
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../3rdparty/cubeb/cubeb/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../3rdparty/cubeb/extra
 )
 
 target_compile_definitions(rpcs3_android PRIVATE
@@ -23,8 +31,8 @@ target_compile_definitions(rpcs3_android PRIVATE
     _CRT_SECURE_NO_WARNINGS
 )
 
-find_library(log-lib log)
 target_link_libraries(rpcs3_android PRIVATE
-    ${log-lib}
+    ${RPCS3_BUILD_DIR}/rpcs3/Emu/librpcs3_emu.a
+    log
     android
 )
