@@ -1,0 +1,16 @@
+# Gradle
+.gradle/
+build/
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+
+# Native
+.cxx/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+.externalNativeBuild/
