@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  NDK_VERSION: "27.2.12479018"
+  NDK_VERSION: "28.2.13672672"
   BUILD_TOOLS_VERSION: "35.0.0"
   PLATFORM_VERSION: "android-35"
 
