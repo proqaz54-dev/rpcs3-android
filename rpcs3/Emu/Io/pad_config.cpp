@@ -229,3 +229,7 @@ void cfg_input_configurations::save() const
 		input_log.error("Failed to save input configurations config to '%s' (error=%s)", path, fs::g_tls_error);
 	}
 }
+
+#ifdef ANDROID
+cfg_input_configurations g_cfg_input_configs;
+#endif

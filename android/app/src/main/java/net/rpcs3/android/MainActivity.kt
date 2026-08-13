@@ -1,15 +1,14 @@
 package net.rpcs3.android
 
-import android.opengl.EGL14
+import android.app.Activity
 import android.os.Bundle
 import android.util.Log
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.widget.FrameLayout
-import androidx.activity.ComponentActivity
 
-class MainActivity : ComponentActivity(), SurfaceHolder.Callback {
+class MainActivity : Activity(), SurfaceHolder.Callback {
 
     private lateinit var surfaceView: SurfaceView
 
@@ -20,11 +19,13 @@ class MainActivity : ComponentActivity(), SurfaceHolder.Callback {
         surfaceView = SurfaceView(this)
         surfaceView.holder.addCallback(this)
         setContentView(FrameLayout(this).apply { addView(surfaceView) })
+        System.loadLibrary("rpcs3_android")
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         Log.i(TAG, "surfaceCreated")
-        nativeProvideSurface(holder.surface)
+        NativeBridge.setSurface(holder.surface)
+        startEmulation()
     }
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
@@ -33,17 +34,11 @@ class MainActivity : ComponentActivity(), SurfaceHolder.Callback {
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         Log.i(TAG, "surfaceDestroyed")
-        nativeProvideSurface(null)
-    }
-
-    private fun nativeProvideSurface(surface: Surface?) {
-        // setNativeWindow / releaseNativeWindow on the JNI side
-        NativeBridge.setSurface(surface)
-        surface?.let { startEmulation() }
+        NativeBridge.setSurface(null)
     }
 
     private fun startEmulation() {
-        val bootPath = null // TODO: file picker -> game path
+        val bootPath: String? = null // TODO: file picker -> game path
         Log.i(TAG, "nativeBoot")
         nativeBoot(bootPath)
     }
@@ -60,6 +55,5 @@ object NativeBridge {
 
     fun setSurface(s: Surface?) {
         surface = s
-        EGL14.eglGetCurrentDisplay() // touch EGL to ensure surface validity
     }
 }
