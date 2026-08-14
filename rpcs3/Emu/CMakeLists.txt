@@ -64,6 +64,7 @@ if(ANDROID)
     target_include_directories(rpcs3_emu
         PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/ffmpeg/android-stub
+        ${CMAKE_SOURCE_DIR}/android-stub
     )
 endif()
 
