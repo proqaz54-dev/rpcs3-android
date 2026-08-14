@@ -83,7 +83,7 @@ jobs:
       - name: Build JNI library and assemble APK
         run: |
           cd android
-          ./gradlew assembleDebug
+          ../gradlew assembleDebug
         env:
           RPCS3_BUILD_DIR: ${{ github.workspace }}/build-android
 
