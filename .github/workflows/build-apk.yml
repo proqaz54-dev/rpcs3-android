@@ -38,14 +38,37 @@ jobs:
           sdkmanager --install "ndk;${NDK_VERSION}" "build-tools;${BUILD_TOOLS_VERSION}" "platforms;${PLATFORM_VERSION}"
           echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
 
-      - name: Install CMake and Ninja
+      - name: Install CMake, Ninja and ccache
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build
+          sudo apt-get install -y cmake ninja-build ccache
           echo "CMAKE=$(which cmake)" >> "$GITHUB_ENV"
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('3rdparty/**/*.cpp', '3rdparty/**/*.h', 'rpcs3/**/*.cpp', 'rpcs3/**/*.h') }}
+          restore-keys: |
+            ccache-${{ runner.os }}-
+
+      - name: Configure ccache
+        run: |
+          ccache --set-config=cache_dir=~/.ccache
+          ccache --set-config=max_size=3G
+          ccache --set-config=compression=true
+
+      - name: Cache LLVM build
+        uses: actions/cache@v4
+        with:
+          path: build-android/3rdparty/llvm
+          key: llvm-${{ runner.os }}-${{ hashFiles('3rdparty/llvm/**') }}
+          restore-keys: |
+            llvm-${{ runner.os }}-
 
       - name: Build emulator core (rpcs3_emu static lib)
         run: |
+          export CCACHE_CPP2=yes
           cmake -S . -B build-android \
             -DCMAKE_TOOLCHAIN_FILE="${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake" \
             -DANDROID_PLATFORM=android-29 \
