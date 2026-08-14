@@ -318,6 +318,10 @@ namespace vk
 			VK_BLEND_OP_ADD, VK_BLEND_OP_ADD);
 	}
 
+	ui_overlay_renderer::~ui_overlay_renderer()
+	{
+	}
+
 	void ui_overlay_renderer::upload_simple_texture(vk::image* tex, vk::command_buffer& cmd,
 		vk::data_heap& upload_heap, u32 w, u32 h, u32 layers, bool font, const void* pixel_src)
 	{
