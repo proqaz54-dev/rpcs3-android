@@ -9,6 +9,10 @@ endif()
 
 project(rpcs3 LANGUAGES C CXX)
 
+if(ANDROID)
+    add_compile_options(-Wno-error=return-type)
+endif()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
