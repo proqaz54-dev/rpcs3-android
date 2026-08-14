@@ -9,7 +9,7 @@ endif()
 
 project(rpcs3 LANGUAGES C CXX)
 
-if(ANDROID)
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
     add_compile_options(-Wno-error=return-type)
 endif()
 
