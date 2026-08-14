@@ -21,6 +21,10 @@ add_library(rpcs3_emu STATIC
     IPC_socket.cpp
 )
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+    target_compile_options(rpcs3_emu PRIVATE -Wno-error=return-type)
+endif()
+
 if(USE_LTO)
     set_target_properties(rpcs3_emu PROPERTIES INTERPROCEDURAL_OPTIMIZATION ON)
 endif()
