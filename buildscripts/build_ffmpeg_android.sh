@@ -29,7 +29,7 @@ fi
 mkdir -p "$WORK_DIR/build-arm64"
 cd "$WORK_DIR/build-arm64"
 
-if [ ! -f config.mak ]; then
+configure_ffmpeg() {
   ../FFmpeg-n8.1.1/configure \
     --prefix="$WORK_DIR/install-arm64" \
     --target-os=android \
@@ -52,6 +52,17 @@ if [ ! -f config.mak ]; then
     --enable-parser=h264 --enable-parser=mpeg4video --enable-parser=mpegaudio --enable-parser=mpegvideo --enable-parser=mjpeg --enable-parser=aac --enable-parser=aac_latm \
     --enable-protocol=file \
     --enable-bsf=mjpeg2jpeg
+}
+
+if [ ! -f config.mak ]; then
+  configure_ffmpeg
+else
+  # Cached builds may predate the -fPIC requirement; rebuild in that case.
+  if ! grep -q -- "-fPIC" config.mak; then
+    echo "Existing FFmpeg build lacks -fPIC, rebuilding..."
+    find . -mindepth 1 -delete
+    configure_ffmpeg
+  fi
 fi
 
 make -j"$JOBS"
