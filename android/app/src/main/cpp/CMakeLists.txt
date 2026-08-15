@@ -42,6 +42,9 @@ file(GLOB_RECURSE RPCS3_CORE_LIBS
     "${RPCS3_BUILD_DIR}/_deps/*/*/*/*/*.a"
 )
 
+# Host (NATIVE) LLVM libs are x86_64 and cannot link into arm64 .so
+list(FILTER RPCS3_CORE_LIBS EXCLUDE REGEX "/NATIVE/")
+
 target_link_libraries(rpcs3_android PRIVATE
     ${RPCS3_CORE_LIBS}
     log
