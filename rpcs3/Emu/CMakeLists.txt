@@ -87,9 +87,8 @@ target_sources(rpcs3_emu PRIVATE
     ../util/serialization_ext.cpp
     ../rpcs3_version.cpp
     ../Input/pad_thread_android_stub.cpp
-    ../Input/sdl_instance_android_stub.cpp
-    ../Input/mic_android_stub.cpp
-    ../Input/product_info_android_stub.cpp
+    ../Input/sdl_instance.cpp
+    ../Input/product_info.cpp
     ../../Utilities/bin_patch.cpp
     ../../Utilities/cheat_info.cpp
     ../../Utilities/cond.cpp
@@ -306,6 +305,7 @@ target_sources(rpcs3_emu PRIVATE
     Cell/Modules/cellNetCtl.cpp
     Cell/Modules/cellOskDialog.cpp
     Cell/Modules/cellOvis.cpp
+    Cell/Modules/cellMic.cpp
     Cell/Modules/cellPad.cpp
     Cell/Modules/cellPamf.cpp
     Cell/Modules/cellPesmUtility.cpp
