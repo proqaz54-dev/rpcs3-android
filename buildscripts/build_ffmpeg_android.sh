@@ -70,9 +70,9 @@ else
 fi
 
 # CFLAGS/ASFLAGS must contain -fPIC for use inside a shared library.
-if ! grep -q -- "-fPIC" ffbuild/config.mak || ! grep -q -- "-fPIC" ffbuild/config.mak; then
-  echo "Forcing -fPIC into ffbuild/config.mak CFLAGS and rebuilding objects..."
-  sed -i 's/^CFLAGS=/CFLAGS=-fPIC /; s/^ASFLAGS=/ASFLAGS=-fPIC /' ffbuild/config.mak
+if ! grep -q "^CFLAGS=.*-fPIC" "$CONFIG_MAK" || ! grep -q "^ASFLAGS=.*-fPIC" "$CONFIG_MAK"; then
+  echo "Forcing -fPIC into ffbuild/config.mak CFLAGS/ASFLAGS and rebuilding objects..."
+  sed -i 's/^CFLAGS=/CFLAGS=-fPIC /; s/^ASFLAGS=/ASFLAGS=-fPIC /' "$CONFIG_MAK"
   find . -name '*.o' -delete
 fi
 grep "^CFLAGS=" "$CONFIG_MAK"
