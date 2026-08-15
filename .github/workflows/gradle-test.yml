@@ -62,12 +62,18 @@ jobs:
           sdkmanager --install "ndk;${NDK_VERSION}" "build-tools;${BUILD_TOOLS_VERSION}" "platforms;${PLATFORM_VERSION}"
           echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
 
-      - name: Download core libs from latest successful run
-        uses: actions/download-artifact@v4
-        with:
-          name: rpcs3-core-libs
-          run-id: ${{ env.RUN_ID }}
-          path: build-android
+      - name: Download core libs from latest run with artifact
+        run: |
+          ART_ID=$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts" \
+            --jq '[.artifacts[] | select(.name == "rpcs3-core-libs")][0].id')
+          mkdir -p build-android
+          gh api "repos/${{ github.repository }}/actions/artifacts/$ART_ID/zip" > core-libs.zip
+          unzip -q -o core-libs.zip -d build-android
+          rm core-libs.zip
+          ls -la build-android/rpcs3/Emu/librpcs3_emu.a
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ env.RUN_ID }}
 
       - name: Build JNI library and assemble APK
         run: |
