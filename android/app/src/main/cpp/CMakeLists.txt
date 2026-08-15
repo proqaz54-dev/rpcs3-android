@@ -34,6 +34,8 @@ target_compile_definitions(rpcs3_android PRIVATE
 
 target_link_libraries(rpcs3_android PRIVATE
     ${RPCS3_BUILD_DIR}/rpcs3/Emu/librpcs3_emu.a
+    ${RPCS3_BUILD_DIR}/3rdparty/libusb/libusb-1.0.a
+    ${RPCS3_BUILD_DIR}/3rdparty/SoundTouch/libsoundtouch.a
     log
     android
 )

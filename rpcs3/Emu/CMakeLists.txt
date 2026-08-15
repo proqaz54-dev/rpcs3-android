@@ -84,6 +84,7 @@ target_sources(rpcs3_emu PRIVATE
     ../util/sysinfo.cpp
     ../util/cpu_stats.cpp
     ../util/serialization_ext.cpp
+    ../rpcs3_version.cpp
     ../../Utilities/bin_patch.cpp
     ../../Utilities/cheat_info.cpp
     ../../Utilities/cond.cpp
