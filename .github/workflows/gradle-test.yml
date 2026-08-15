@@ -21,13 +21,25 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Find latest successful core build run
+      - name: Find latest run with core libs artifact
         id: find-run
         run: |
-          RUN_ID=$(gh api "repos/${{ github.repository }}/actions/workflows/build-apk.yml/runs?status=success&per_page=1" \
-            --jq '.workflow_runs[0].id')
-          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
-            echo "No successful core build found. Run the main workflow first." >&2
+          RUN_ID=""
+          for page in 1 2 3 4 5; do
+            IDS=$(gh api "repos/${{ github.repository }}/actions/workflows/build-apk.yml/runs?per_page=20&page=$page" \
+              --jq '[.workflow_runs[] | select(.status == "completed") | .id] | join(" ")')
+            for ID in $IDS; do
+              COUNT=$(gh api "repos/${{ github.repository }}/actions/runs/$ID/artifacts" \
+                --jq '[.artifacts[] | select(.name == "rpcs3-core-libs")] | length')
+              if [ "$COUNT" -gt 0 ]; then
+                RUN_ID=$ID
+                break
+              fi
+            done
+            [ -n "$RUN_ID" ] && break
+          done
+          if [ -z "$RUN_ID" ]; then
+            echo "No core libs artifact found. Run the main workflow first." >&2
             exit 1
           fi
           echo "Using core artifact from run $RUN_ID"
