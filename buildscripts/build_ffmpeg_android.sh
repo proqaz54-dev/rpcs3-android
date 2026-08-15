@@ -52,8 +52,15 @@ if [ ! -f config.mak ]; then
 fi
 
 make -j"$JOBS"
-make install
 
 mkdir -p "$OUT_DIR/lib"
-cp -f "$WORK_DIR"/install-arm64/lib/libav*.a "$OUT_DIR/lib/"
+cp -f libavformat/libavformat.a \
+      libavcodec/libavcodec.a \
+      libavfilter/libavfilter.a \
+      libavutil/libavutil.a \
+      libswscale/libswscale.a \
+      libswresample/libswresample.a \
+      "$OUT_DIR/lib/"
+
 echo "FFmpeg installed to $OUT_DIR/lib"
+ls -la "$OUT_DIR/lib/"
