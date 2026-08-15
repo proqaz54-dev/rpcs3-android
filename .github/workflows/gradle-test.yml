@@ -19,6 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          submodules: recursive
           fetch-depth: 1
 
       - name: Find latest run with core libs artifact
