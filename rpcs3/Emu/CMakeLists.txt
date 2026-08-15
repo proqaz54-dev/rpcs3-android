@@ -82,6 +82,16 @@ target_sources(rpcs3_emu PRIVATE
     ../Input/sdl_instance.cpp
     ../Input/product_info.cpp
     ../Input/input_config_globals_android.cpp
+    ../Input/hid_pad_handler.cpp
+    ../Input/ds3_pad_handler.cpp
+    ../Input/ds4_pad_handler.cpp
+    ../Input/dualsense_pad_handler.cpp
+    ../Input/skateboard_pad_handler.cpp
+    ../Input/sdl_pad_handler.cpp
+    ../Input/ps_move_handler.cpp
+    ../Input/ps_move_config.cpp
+    ../Input/ps_move_calibration.cpp
+    ../Input/ps_move_tracker.cpp
     ../../Utilities/bin_patch.cpp
     ../../Utilities/cheat_info.cpp
     ../../Utilities/cond.cpp
