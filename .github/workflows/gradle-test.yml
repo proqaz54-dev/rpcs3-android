@@ -80,7 +80,8 @@ jobs:
             --jq '[.artifacts[] | select(.name == "rpcs3-core-libs")][0].id')
           mkdir -p build-android
           gh api "repos/${{ github.repository }}/actions/artifacts/$ART_ID/zip" > core-libs.zip
-          unzip -q -o core-libs.zip -d build-android
+          # -n: keep freshly built ffmpeg (PIC) over artifact copies
+          unzip -q -n core-libs.zip -d build-android
           rm core-libs.zip
           ls -la build-android/rpcs3/Emu/librpcs3_emu.a
         env:
