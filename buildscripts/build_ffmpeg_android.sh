@@ -17,6 +17,9 @@ RANLIB="$TC/bin/llvm-ranlib"
 STRIP="$TC/bin/llvm-strip"
 NM="$TC/bin/llvm-nm"
 
+export CFLAGS="-fPIC"
+export CXXFLAGS="-fPIC"
+
 mkdir -p "$WORK_DIR"
 if [ ! -d "$WORK_DIR/FFmpeg-n8.1.1" ]; then
   curl -sSL "$SOURCE_TARBALL" -o "$WORK_DIR/ffmpeg.tar.gz"
