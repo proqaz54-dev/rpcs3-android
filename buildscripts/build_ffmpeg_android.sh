@@ -36,6 +36,7 @@ configure_ffmpeg() {
     --arch=aarch64 \
     --cpu=armv8-a \
     --enable-cross-compile \
+    --extra-cflags=-fPIC \
     --cc="$CC" \
     --cxx="${CC%clang}clang++" \
     --ar="$AR" --ranlib="$RANLIB" --strip="$STRIP" --nm="$NM" \
@@ -64,6 +65,14 @@ else
     configure_ffmpeg
   fi
 fi
+
+# CFLAGS must contain -fPIC for use inside a shared library.
+if ! grep -q -- "-fPIC" config.mak; then
+  echo "Forcing -fPIC into config.mak CFLAGS and rebuilding objects..."
+  sed -i 's/^CFLAGS=/CFLAGS=-fPIC /' config.mak
+  find . -name '*.o' -delete
+fi
+grep "^CFLAGS=" config.mak
 
 make -j"$JOBS"
 
