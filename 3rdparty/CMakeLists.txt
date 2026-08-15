@@ -322,14 +322,11 @@ else()
 	add_library(3rdparty_ffmpeg INTERFACE)
 
 	set(FFMPEG_LIB_DIR "${CMAKE_SOURCE_DIR}/build-android/3rdparty/ffmpeg/lib")
-	message(STATUS "FFmpeg android lib dir: ${FFMPEG_LIB_DIR}")
-	file(GLOB FFMPEG_ANDROID_LIBS "${FFMPEG_LIB_DIR}/libav*.a")
-	message(STATUS "FFmpeg android glob: ${FFMPEG_ANDROID_LIBS}")
 	foreach(fflib avformat avcodec avfilter avutil swscale swresample)
-		find_library(FFMPEG_LIB_${fflib} ${fflib} PATHS ${FFMPEG_LIB_DIR} NO_DEFAULT_PATH)
-		if (FFMPEG_LIB_${fflib} MATCHES "FFMPEG_LIB_${fflib}-NOTFOUND")
-			message(FATAL_ERROR "FFmpeg not found for Android! Run buildscripts/build_ffmpeg_android.sh first. (missing ${fflib}, dir=${FFMPEG_LIB_DIR})")
+		if (NOT EXISTS "${FFMPEG_LIB_DIR}/lib${fflib}.a")
+			message(FATAL_ERROR "FFmpeg not found for Android! Run buildscripts/build_ffmpeg_android.sh first. (missing ${FFMPEG_LIB_DIR}/lib${fflib}.a)")
 		endif()
+		set(FFMPEG_LIB_${fflib} "${FFMPEG_LIB_DIR}/lib${fflib}.a")
 	endforeach()
 
 	target_link_libraries(3rdparty_ffmpeg
