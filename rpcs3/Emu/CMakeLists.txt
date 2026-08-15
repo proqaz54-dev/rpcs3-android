@@ -87,6 +87,9 @@ target_sources(rpcs3_emu PRIVATE
     ../util/serialization_ext.cpp
     ../rpcs3_version.cpp
     ../Input/pad_thread_android_stub.cpp
+    ../Input/sdl_instance_android_stub.cpp
+    ../Input/mic_android_stub.cpp
+    ../Input/product_info_android_stub.cpp
     ../../Utilities/bin_patch.cpp
     ../../Utilities/cheat_info.cpp
     ../../Utilities/cond.cpp
@@ -444,6 +447,7 @@ target_sources(rpcs3_emu PRIVATE
     Io/ps_move_data.cpp
     Io/rb3drums_config.cpp
     Io/RB3MidiDrums.cpp
+    ../../../3rdparty/fusion/fusion/Fusion/FusionAhrs.c
     Io/RB3MidiGuitar.cpp
     Io/RB3MidiKeyboard.cpp
     Io/recording_config.cpp

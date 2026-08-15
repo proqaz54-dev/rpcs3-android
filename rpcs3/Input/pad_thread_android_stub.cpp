@@ -15,4 +15,19 @@ namespace pad
 	atomic_t<bool> g_started;
 	atomic_t<bool> g_home_menu_requested;
 }
+
+std::string g_input_config_override;
+
+s32 pad_thread::AddLddPad()
+{
+	return 0;
+}
+
+void pad_thread::SetIntercepted(bool /*intercepted*/)
+{
+}
+
+void pad_thread::SetRumble(u32 /*pad*/, u8 /*large_motor*/, u8 /*small_motor*/)
+{
+}
 #endif
