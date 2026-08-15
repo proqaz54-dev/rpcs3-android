@@ -1,0 +1,71 @@
+name: Gradle-only test (fast)
+
+on:
+  workflow_dispatch:
+
+env:
+  NDK_VERSION: "28.2.13676358"
+  BUILD_TOOLS_VERSION: "35.0.0"
+  PLATFORM_VERSION: "android-35"
+
+jobs:
+  gradle-check:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Find latest successful core build run
+        id: find-run
+        run: |
+          RUN_ID=$(gh api "repos/${{ github.repository }}/actions/workflows/build-apk.yml/runs?status=success&per_page=1" \
+            --jq '.workflow_runs[0].id')
+          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+            echo "No successful core build found. Run the main workflow first." >&2
+            exit 1
+          fi
+          echo "Using core artifact from run $RUN_ID"
+          echo "RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK and build tools
+        run: |
+          sdkmanager --install "ndk;${NDK_VERSION}" "build-tools;${BUILD_TOOLS_VERSION}" "platforms;${PLATFORM_VERSION}"
+          echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Download core libs from latest successful run
+        uses: actions/download-artifact@v4
+        with:
+          name: rpcs3-core-libs
+          run-id: ${{ env.RUN_ID }}
+          path: build-android
+
+      - name: Build JNI library and assemble APK
+        run: |
+          cd android
+          ../gradlew assembleDebug
+        env:
+          RPCS3_BUILD_DIR: ${{ github.workspace }}/build-android
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpcs3-android-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

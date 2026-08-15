@@ -82,9 +82,11 @@ target_sources(rpcs3_emu PRIVATE
     ../util/vm_native.cpp
     ../util/dyn_lib.cpp
     ../util/sysinfo.cpp
+    ../util/media_utils_android_stub.cpp
     ../util/cpu_stats.cpp
     ../util/serialization_ext.cpp
     ../rpcs3_version.cpp
+    ../Input/pad_thread_android_stub.cpp
     ../../Utilities/bin_patch.cpp
     ../../Utilities/cheat_info.cpp
     ../../Utilities/cond.cpp

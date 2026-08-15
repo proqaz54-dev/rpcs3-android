@@ -4,6 +4,11 @@ on:
   push:
     branches: [main, master]
   workflow_dispatch:
+    inputs:
+      skip_core:
+        description: "Skip core rebuild, reuse latest core artifact"
+        type: boolean
+        default: false
 
 env:
   NDK_VERSION: "28.2.13676358"
@@ -11,11 +16,13 @@ env:
   PLATFORM_VERSION: "android-35"
 
 jobs:
-  build:
+  build-core:
     runs-on: ubuntu-22.04
     defaults:
       run:
         shell: bash
+    outputs:
+      core_ready: ${{ steps.build.outcome }}
 
     steps:
       - name: Checkout with submodules
@@ -67,6 +74,7 @@ jobs:
             llvm-${{ runner.os }}-
 
       - name: Build emulator core (rpcs3_emu static lib)
+        id: build
         run: |
           export CCACHE_CPP2=yes
           cmake -S . -B build-android \
@@ -79,6 +87,51 @@ jobs:
             -DUSE_FAUDIO=OFF \
             -DUSE_SYSTEM_SDL=OFF
           cmake --build build-android -j$(nproc) --target rpcs3_emu
+
+      - name: Upload core libs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpcs3-core-libs
+          path: |
+            build-android/rpcs3/Emu/librpcs3_emu.a
+            build-android/3rdparty/**/*.a
+            build-android/_deps/**/*.a
+          retention-days: 7
+          if-no-files-found: warn
+
+  build-apk:
+    needs: build-core
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK and build tools
+        run: |
+          sdkmanager --install "ndk;${NDK_VERSION}" "build-tools;${BUILD_TOOLS_VERSION}" "platforms;${PLATFORM_VERSION}"
+          echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Download core libs
+        uses: actions/download-artifact@v4
+        with:
+          name: rpcs3-core-libs
+          path: build-android
 
       - name: Build JNI library and assemble APK
         run: |
