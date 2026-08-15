@@ -55,11 +55,13 @@ configure_ffmpeg() {
     --enable-bsf=mjpeg2jpeg
 }
 
-if [ ! -f config.mak ]; then
+CONFIG_MAK="ffbuild/config.mak"
+
+if [ ! -f "$CONFIG_MAK" ]; then
   configure_ffmpeg
 else
   # Cached builds may predate the -fPIC requirement; rebuild in that case.
-  if ! grep -q -- "-fPIC" config.mak; then
+  if ! grep -q -- "-fPIC" "$CONFIG_MAK"; then
     echo "Existing FFmpeg build lacks -fPIC, rebuilding..."
     find . -mindepth 1 -delete
     configure_ffmpeg
@@ -67,12 +69,12 @@ else
 fi
 
 # CFLAGS must contain -fPIC for use inside a shared library.
-if ! grep -q -- "-fPIC" config.mak; then
+if ! grep -q -- "-fPIC" "$CONFIG_MAK"; then
   echo "Forcing -fPIC into config.mak CFLAGS and rebuilding objects..."
-  sed -i 's/^CFLAGS=/CFLAGS=-fPIC /' config.mak
+  sed -i 's/^CFLAGS=/CFLAGS=-fPIC /' "$CONFIG_MAK"
   find . -name '*.o' -delete
 fi
-grep "^CFLAGS=" config.mak
+grep "^CFLAGS=" "$CONFIG_MAK"
 
 make -j"$JOBS"
 
