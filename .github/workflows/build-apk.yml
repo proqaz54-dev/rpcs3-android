@@ -73,6 +73,18 @@ jobs:
           restore-keys: |
             llvm-${{ runner.os }}-
 
+      - name: Cache FFmpeg build
+        uses: actions/cache@v4
+        with:
+          path: ~/ffmpeg-build
+          key: ffmpeg-android-${{ runner.os }}-${{ hashFiles('buildscripts/build_ffmpeg_android.sh') }}
+          restore-keys: |
+            ffmpeg-android-${{ runner.os }}-
+
+      - name: Build FFmpeg for Android
+        run: |
+          bash buildscripts/build_ffmpeg_android.sh "$GITHUB_WORKSPACE/build-android/3rdparty/ffmpeg"
+
       - name: Build emulator core (rpcs3_emu static lib)
         id: build
         run: |

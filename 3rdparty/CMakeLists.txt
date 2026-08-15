@@ -318,8 +318,27 @@ if(NOT ANDROID)
 		target_include_directories(3rdparty_ffmpeg SYSTEM INTERFACE "ffmpeg/include")
 	endif()
 else()
-	# Android: no ffmpeg (video capture is not supported yet).
+	# Android: static ffmpeg built by buildscripts/build_ffmpeg_android.sh
 	add_library(3rdparty_ffmpeg INTERFACE)
+
+	set(FFMPEG_LIB_DIR "${CMAKE_SOURCE_DIR}/build-android/3rdparty/ffmpeg/lib")
+	foreach(fflib avformat avcodec avfilter avutil swscale swresample)
+		find_library(FFMPEG_LIB_${fflib} ${fflib} PATHS ${FFMPEG_LIB_DIR} NO_DEFAULT_PATH)
+		if (FFMPEG_LIB_${fflib} MATCHES "FFMPEG_LIB_${fflib}-NOTFOUND")
+			message(FATAL_ERROR "FFmpeg not found for Android! Run buildscripts/build_ffmpeg_android.sh first. (missing ${fflib})")
+		endif()
+	endforeach()
+
+	target_link_libraries(3rdparty_ffmpeg
+	INTERFACE
+		${FFMPEG_LIB_avformat}
+		${FFMPEG_LIB_avcodec}
+		${FFMPEG_LIB_avfilter}
+		${FFMPEG_LIB_avutil}
+		${FFMPEG_LIB_swscale}
+		${FFMPEG_LIB_swresample}
+	)
+	target_include_directories(3rdparty_ffmpeg SYSTEM INTERFACE "ffmpeg/include")
 endif()
 
 

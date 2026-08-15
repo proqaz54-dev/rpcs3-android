@@ -64,14 +64,6 @@ target_include_directories(rpcs3_emu
         ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty
 )
 
-if(ANDROID)
-    target_include_directories(rpcs3_emu
-        PUBLIC
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty/ffmpeg/android-stub
-        ${CMAKE_SOURCE_DIR}/android-stub
-    )
-endif()
-
 # Utilities
 target_sources(rpcs3_emu PRIVATE
     ../util/atomic.cpp
@@ -82,13 +74,14 @@ target_sources(rpcs3_emu PRIVATE
     ../util/vm_native.cpp
     ../util/dyn_lib.cpp
     ../util/sysinfo.cpp
-    ../util/media_utils_android_stub.cpp
+    ../util/media_utils.cpp
     ../util/cpu_stats.cpp
     ../util/serialization_ext.cpp
     ../rpcs3_version.cpp
-    ../Input/pad_thread_android_stub.cpp
+    ../Input/pad_thread.cpp
     ../Input/sdl_instance.cpp
     ../Input/product_info.cpp
+    ../Input/input_config_globals_android.cpp
     ../../Utilities/bin_patch.cpp
     ../../Utilities/cheat_info.cpp
     ../../Utilities/cond.cpp
@@ -696,6 +689,7 @@ target_link_libraries(rpcs3_emu
         3rdparty::vulkan
         3rdparty::glew
         3rdparty::libusb
+        3rdparty::hidapi
         3rdparty::wolfssl
         3rdparty::openal
         3rdparty::cubeb

@@ -21,8 +21,7 @@ target_include_directories(rpcs3_android PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../rpcs3
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../3rdparty
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../3rdparty/ffmpeg/android-stub
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../android-stub
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../3rdparty/ffmpeg/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../3rdparty/cubeb/cubeb/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../3rdparty/cubeb/extra
 )
