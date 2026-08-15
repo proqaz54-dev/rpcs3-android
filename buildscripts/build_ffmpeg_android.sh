@@ -19,6 +19,7 @@ NM="$TC/bin/llvm-nm"
 
 export CFLAGS="-fPIC"
 export CXXFLAGS="-fPIC"
+export ASFLAGS="-fPIC"
 
 mkdir -p "$WORK_DIR"
 if [ ! -d "$WORK_DIR/FFmpeg-n8.1.1" ]; then
@@ -68,10 +69,10 @@ else
   fi
 fi
 
-# CFLAGS must contain -fPIC for use inside a shared library.
-if ! grep -q -- "-fPIC" "$CONFIG_MAK"; then
-  echo "Forcing -fPIC into config.mak CFLAGS and rebuilding objects..."
-  sed -i 's/^CFLAGS=/CFLAGS=-fPIC /' "$CONFIG_MAK"
+# CFLAGS/ASFLAGS must contain -fPIC for use inside a shared library.
+if ! grep -q -- "-fPIC" ffbuild/config.mak || ! grep -q -- "-fPIC" ffbuild/config.mak; then
+  echo "Forcing -fPIC into ffbuild/config.mak CFLAGS and rebuilding objects..."
+  sed -i 's/^CFLAGS=/CFLAGS=-fPIC /; s/^ASFLAGS=/ASFLAGS=-fPIC /' ffbuild/config.mak
   find . -name '*.o' -delete
 fi
 grep "^CFLAGS=" "$CONFIG_MAK"
