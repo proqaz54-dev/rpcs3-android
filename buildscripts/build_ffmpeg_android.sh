@@ -26,8 +26,8 @@ if [ ! -d "$WORK_DIR/FFmpeg-n8.1.1" ]; then
   tar xzf "$WORK_DIR/ffmpeg.tar.gz" -C "$WORK_DIR"
 fi
 
-mkdir -p "$WORK_DIR/build-arm64"
-cd "$WORK_DIR/build-arm64"
+mkdir -p "$WORK_DIR/build-arm64-pic"
+cd "$WORK_DIR/build-arm64-pic"
 
 configure_ffmpeg() {
   ../FFmpeg-n8.1.1/configure \
