@@ -48,9 +48,10 @@ target_link_libraries(rpcs3_android PRIVATE
     ${RPCS3_CORE_LIBS}
     log
     android
+    z
 )
 
 # FFmpeg NEON asm (tx_float_neon.S) addresses ff_tx_tab_* via adrp;
 # Bsymbolic binds globals locally so lld accepts those PC-relative
 # relocations in a shared library.
-target_link_options(rpcs3_android PRIVATE "-Wl,-Bsymbolic")
+target_link_options(rpcs3_android PRIVATE "-Wl,-Bsymbolic" "-Wl,--error-limit=0")

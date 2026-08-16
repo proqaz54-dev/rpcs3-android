@@ -75,6 +75,7 @@ target_sources(rpcs3_emu PRIVATE
     ../util/dyn_lib.cpp
     ../util/sysinfo.cpp
     ../util/media_utils.cpp
+    ../util/video_provider.cpp
     ../util/cpu_stats.cpp
     ../util/serialization_ext.cpp
     ../rpcs3_version.cpp
@@ -267,9 +268,11 @@ target_sources(rpcs3_emu PRIVATE
     Cell/Modules/cellAdec.cpp
     Cell/Modules/cellAtrac.cpp
     Cell/Modules/cellAtracMulti.cpp
+    Cell/Modules/cellAtracXdec.cpp
     Cell/Modules/cellAudio.cpp
     Cell/Modules/cellAudioOut.cpp
     Cell/Modules/cellAuthDialog.cpp
+    Cell/Modules/cellAvconfExt.cpp
     Cell/Modules/cellBgdl.cpp
     Cell/Modules/cellCamera.cpp
     Cell/Modules/cellCelp8Enc.cpp
@@ -318,12 +321,14 @@ target_sources(rpcs3_emu PRIVATE
     Cell/Modules/cellPngDec.cpp
     Cell/Modules/cellPngEnc.cpp
     Cell/Modules/cellPrint.cpp
+    Cell/Modules/cellRec.cpp
     Cell/Modules/cellRemotePlay.cpp
     Cell/Modules/cellResc.cpp
     Cell/Modules/cellRtcAlarm.cpp
     Cell/Modules/cellRtc.cpp
     Cell/Modules/cellRudp.cpp
     Cell/Modules/cellSailRec.cpp
+    Cell/Modules/cellSail.cpp
     Cell/Modules/cellSaveData.cpp
     Cell/Modules/cellScreenshot.cpp
     Cell/Modules/cellSearch.cpp
@@ -350,11 +355,13 @@ target_sources(rpcs3_emu PRIVATE
     Cell/Modules/cellUsbd.cpp
     Cell/Modules/cellUsbpspcm.cpp
     Cell/Modules/cellUserInfo.cpp
+    Cell/Modules/cellVdec.cpp
     Cell/Modules/cellVideoExport.cpp
     Cell/Modules/cellVideoOut.cpp
     Cell/Modules/cellVideoPlayerUtility.cpp
     Cell/Modules/cellVideoUpload.cpp
     Cell/Modules/cellVoice.cpp
+    Cell/Modules/cellVpost.cpp
     Cell/Modules/cellWebBrowser.cpp
     Cell/Modules/HLE_PATCHES.cpp
     Cell/Modules/libad_async.cpp
