@@ -1,11 +1,15 @@
 package net.rpcs3.android.ui;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.DocumentsContract;
+import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -54,6 +58,8 @@ public class LauncherActivity extends AppCompatActivity implements GamesFragment
     private ActivityResultLauncher<Intent> mFolderPickerLauncher;
     private ActivityResultLauncher<Intent> mFilePickerLauncher;
     private ActivityResultLauncher<Intent> mRapPickerLauncher;
+    private ActivityResultLauncher<Intent> mAllFilesLauncher;
+    private ActivityResultLauncher<String[]> mRuntimePermissionLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,9 +77,76 @@ public class LauncherActivity extends AppCompatActivity implements GamesFragment
         setupNavigation();
         setupSearch();
         setupPickers();
+        setupPermissionLaunchers();
+
+        // Android 11+ requires "All files access" to read game files from shared storage
+        ensureStoragePermission();
 
         // Also check if external storage directory contains PS3 games
         scanDefaultStorage();
+    }
+
+    private void setupPermissionLaunchers() {
+        mAllFilesLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (hasStoragePermission()) {
+                        Toast.makeText(this, "Storage access granted", Toast.LENGTH_SHORT).show();
+                    }
+                    scanDefaultStorage();
+                }
+        );
+
+        mRuntimePermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                result -> {
+                    onStoragePermissionResult(result);
+                }
+        );
+    }
+
+    private void onStoragePermissionResult(java.util.Map<String, Boolean> result) {
+        boolean granted = false;
+        for (Boolean value : result.values()) {
+            granted |= Boolean.TRUE.equals(value);
+        }
+        if (granted) {
+            Toast.makeText(this, "Storage access granted", Toast.LENGTH_SHORT).show();
+        }
+        scanDefaultStorage();
+    }
+
+    private void ensureStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11+: needs the "All files access" special permission
+            if (!Environment.isExternalStorageManager()) {
+                Toast.makeText(this, "Grant 'All files access' so RPCS3 can read your games (ISO/PKG/PS3_GAME folders)", Toast.LENGTH_LONG).show();
+                try {
+                    Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                    intent.setData(Uri.parse("package:" + getPackageName()));
+                    mAllFilesLauncher.launch(intent);
+                } catch (Exception e) {
+                    Log.w(TAG, "All files access intent failed, using fallback", e);
+                    mAllFilesLauncher.launch(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
+                }
+            }
+        } else {
+            // Android 10 and below: runtime storage permission
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+                checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                mRuntimePermissionLauncher.launch(new String[]{
+                        Manifest.permission.READ_EXTERNAL_STORAGE,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                });
+            }
+        }
+    }
+
+    private boolean hasStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return Environment.isExternalStorageManager();
+        }
+        return checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
     }
 
     private void setupNavigation() {
@@ -172,6 +245,12 @@ public class LauncherActivity extends AppCompatActivity implements GamesFragment
     }
 
     private void showAddOptionsDialog() {
+        if (!hasStoragePermission()) {
+            Toast.makeText(this, "Storage access required to add games", Toast.LENGTH_SHORT).show();
+            ensureStoragePermission();
+            return;
+        }
+
         String[] options = {
                 "Select Game Directory (Folder with PS3_GAME)",
                 "Select Game File (ISO / PKG / SFO)",
