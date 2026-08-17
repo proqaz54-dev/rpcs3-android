@@ -575,16 +575,13 @@ Java_net_rpcs3_android_RPCS3_importRap(JNIEnv* env, jclass /*clazz*/, jstring ra
 	std::error_code ec;
 	std::filesystem::create_directories(std::filesystem::path(dest).parent_path(), ec);
 
-	std::error_code ec;
-	std::filesystem::create_directories(std::filesystem::path(dest).parent_path(), ec);
-
 	fs::file in(src, fs::read);
 	if (!in)
 	{
 		return JNI_FALSE;
 	}
 
-	fs::file out(dest, fs::write | fs::create | fs::trunc);
+	fs::file out(dest, fs::write + fs::create + fs::trunc);
 	if (!out)
 	{
 		return JNI_FALSE;
