@@ -24,6 +24,7 @@ target_include_directories(rpcs3_android PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../3rdparty/ffmpeg/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../3rdparty/cubeb/cubeb/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../3rdparty/cubeb/extra
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../3rdparty/libsdl-org/SDL/include
 )
 
 target_compile_definitions(rpcs3_android PRIVATE
