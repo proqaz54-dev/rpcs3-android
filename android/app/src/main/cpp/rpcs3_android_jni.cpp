@@ -6,6 +6,7 @@
 #include "Emu/system_utils.hpp"
 #include "Loader/PSF.h"
 #include "Loader/ISO.h"
+#include "Crypto/unpkg.h"
 #include "Utilities/File.h"
 #include "util/sysinfo.hpp"
 #include "util/logs.hpp"
@@ -447,6 +448,39 @@ Java_net_rpcs3_android_RPCS3_scanGame(JNIEnv* env, jclass /*clazz*/, jstring gam
 		return make_jstring(env, json);
 	}
 
+	else if (path.ends_with(".pkg") || path.ends_with(".PKG"))
+	{
+		// Read metadata from the package, then install it so the game is
+		// available on dev_hdd0/game/<title_id>.
+		package_reader pkg(path);
+		if (!pkg.is_valid())
+		{
+			return make_jstring(env, "{\"valid\":false,\"error\":\"invalid_pkg\"}");
+		}
+
+		const std::string title_id = std::string(psf::get_string(pkg.get_psf(), "TITLE_ID"));
+		if (title_id.empty())
+		{
+			return make_jstring(env, "{\"valid\":false,\"error\":\"no_title_id\"}");
+		}
+
+		if (!rpcs3::utils::install_pkg(path))
+		{
+			return make_jstring(env, "{\"valid\":false,\"error\":\"pkg_install_failed\"}");
+		}
+
+		const std::string installed = rpcs3::utils::get_hdd0_game_dir() + title_id + "/";
+		if (!std::filesystem::exists(std::filesystem::path(installed) / "PARAM.SFO", ec))
+		{
+			return make_jstring(env, "{\"valid\":false,\"error\":\"pkg_install_no_sfo\"}");
+		}
+
+		game_root = installed;
+		sfo_path = (std::filesystem::path(installed) / "PARAM.SFO").string();
+		is_disc = false;
+		path = installed;
+	}
+
 	if (sfo_path.empty())
 	{
 		return make_jstring(env, "{\"valid\":false,\"error\":\"no_sfo\"}");
@@ -518,5 +552,51 @@ Java_net_rpcs3_android_RPCS3_sendPadData(JNIEnv* /*env*/, jclass /*clazz*/,
     jint digital1, jint digital2, jint lsX, jint lsY, jint rsX, jint rsY, jint l2Axis, jint r2Axis)
 {
 	android::send_pad_data(digital1, digital2, lsX, lsY, rsX, rsY, l2Axis, r2Axis);
+	return JNI_TRUE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_net_rpcs3_android_RPCS3_importRap(JNIEnv* env, jclass /*clazz*/, jstring rapPath)
+{
+	std::string src = get_jstring(env, rapPath);
+	if (src.empty() || !fs::is_file(src))
+	{
+		return JNI_FALSE;
+	}
+
+	std::string name = std::filesystem::path(src).filename().string();
+	if (name.size() > 4 && (name.ends_with(".rap") || name.ends_with(".RAP")))
+	{
+		name = name.substr(0, name.size() - 4);
+	}
+
+	// Place the key in the default user's exdata directory so PSN/EDAT content activates.
+	std::string dest = rpcs3::utils::get_hdd0_dir() + "home/00000001/exdata/" + name + ".rap";
+	std::error_code ec;
+	std::filesystem::create_directories(std::filesystem::path(dest).parent_path(), ec);
+
+	std::error_code ec;
+	std::filesystem::create_directories(std::filesystem::path(dest).parent_path(), ec);
+
+	fs::file in(src, fs::read);
+	if (!in)
+	{
+		return JNI_FALSE;
+	}
+
+	fs::file out(dest, fs::write | fs::create | fs::trunc);
+	if (!out)
+	{
+		return JNI_FALSE;
+	}
+
+	std::vector<u8> buf(1 << 20);
+	u64 n;
+	while ((n = in.read(buf.data(), buf.size())) > 0)
+	{
+		out.write(buf.data(), n);
+	}
+
+	LOGI("Imported RAP key '%s' -> '%s'", name.c_str(), dest.c_str());
 	return JNI_TRUE;
 }

@@ -1,6 +1,7 @@
 #include "android_callbacks.hpp"
 
 #include "Emu/System.h"
+#include "Emu/system_utils.hpp"
 #include "Emu/Audio/audio_device_enumerator.h"
 #include "Emu/Audio/Cubeb/CubebBackend.h"
 #include "Emu/Audio/Cubeb/cubeb_enumerator.h"
@@ -318,7 +319,20 @@ EmuCallbacks android::create_android_callbacks()
 	cb.on_save_state_progress = [](std::shared_ptr<atomic_t<bool>>, stx::shared_ptr<utils::serial>, stx::atomic_ptr<std::string>*, std::shared_ptr<void>) {};
 	cb.enable_disc_eject = [](bool) {};
 	cb.enable_disc_insert = [](bool) {};
-	cb.on_install_pkgs = [](const std::vector<std::string>&) { return false; };
+	cb.on_install_pkgs = [](const std::vector<std::string>& pkgs)
+	{
+		bool ok = true;
+		for (const std::string& pkg : pkgs)
+		{
+			LOGI("Installing package: %s", pkg.c_str());
+			if (!rpcs3::utils::install_pkg(pkg))
+			{
+				LOGE("Failed to install package: %s", pkg.c_str());
+				ok = false;
+			}
+		}
+		return ok;
+	};
 	cb.add_breakpoint = [](u32) {};
 	cb.init_gs_render = [](utils::serial*) {};
 	cb.get_localized_string = [](localized_string_id, const char*) { return std::string{}; };

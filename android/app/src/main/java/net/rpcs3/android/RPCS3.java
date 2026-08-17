@@ -145,6 +145,7 @@ public class RPCS3 {
     public static native String getTitleId();
     public static native String getTitle();
     public static native String scanGame(String gamePath);
+    public static native boolean importRap(String rapPath);
     public static native String systemInfo();
     public static native boolean supportsCustomDriver();
     public static native boolean sendPadData(int digital1, int digital2, int lsX, int lsY, int rsX, int rsY, int l2Axis, int r2Axis);

@@ -53,6 +53,7 @@ public class LauncherActivity extends AppCompatActivity implements GamesFragment
 
     private ActivityResultLauncher<Intent> mFolderPickerLauncher;
     private ActivityResultLauncher<Intent> mFilePickerLauncher;
+    private ActivityResultLauncher<Intent> mRapPickerLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,6 +149,18 @@ public class LauncherActivity extends AppCompatActivity implements GamesFragment
                     }
                 }
         );
+
+        mRapPickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        Uri rapUri = result.getData().getData();
+                        if (rapUri != null) {
+                            handleRapPicked(rapUri);
+                        }
+                    }
+                }
+        );
     }
 
     private void switchFragment(Fragment fragment) {
@@ -161,7 +174,8 @@ public class LauncherActivity extends AppCompatActivity implements GamesFragment
     private void showAddOptionsDialog() {
         String[] options = {
                 "Select Game Directory (Folder with PS3_GAME)",
-                "Select Game / File (ISO or SFO)"
+                "Select Game File (ISO / PKG / SFO)",
+                "Select RAP License Key (.rap)"
         };
 
         new MaterialAlertDialogBuilder(this)
@@ -175,6 +189,11 @@ public class LauncherActivity extends AppCompatActivity implements GamesFragment
                         intent.addCategory(Intent.CATEGORY_OPENABLE);
                         intent.setType("*/*");
                         mFilePickerLauncher.launch(intent);
+                    } else if (which == 2) {
+                        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                        intent.addCategory(Intent.CATEGORY_OPENABLE);
+                        intent.setType("*/*");
+                        mRapPickerLauncher.launch(intent);
                     }
                 })
                 .show();
@@ -200,23 +219,48 @@ public class LauncherActivity extends AppCompatActivity implements GamesFragment
     private void handleFilePicked(Uri uri) {
         String docId = DocumentsContract.getDocumentId(uri);
         String path = resolveDocIdToPath(docId);
-        if (path != null && new File(path).exists()) {
-            mGameRepository.scanSinglePath(path, new GameRepository.OnScanListener() {
-                @Override
-                public void onScanProgress(String currentPath) {}
-
-                @Override
-                public void onGameFound(Game game) {
-                    Toast.makeText(LauncherActivity.this, "Found: " + game.getTitle(), Toast.LENGTH_SHORT).show();
-                    mGamesFragment.reloadGames();
-                }
-
-                @Override
-                public void onScanComplete(int count) {
-                    mGamesFragment.reloadGames();
-                }
-            });
+        if (path == null || !new File(path).exists()) {
+            Toast.makeText(this, "Could not access the selected file", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        if (path.toLowerCase().endsWith(".rap")) {
+            handleRapPicked(path);
+            return;
+        }
+
+        mGameRepository.scanSinglePath(path, new GameRepository.OnScanListener() {
+            @Override
+            public void onScanProgress(String currentPath) {}
+
+            @Override
+            public void onGameFound(Game game) {
+                Toast.makeText(LauncherActivity.this, "Found: " + game.getTitle(), Toast.LENGTH_SHORT).show();
+                mGamesFragment.reloadGames();
+            }
+
+            @Override
+            public void onScanComplete(int count) {
+                mGamesFragment.reloadGames();
+            }
+        });
+    }
+
+    private void handleRapPicked(Uri uri) {
+        String docId = DocumentsContract.getDocumentId(uri);
+        String path = resolveDocIdToPath(docId);
+        if (path == null || !new File(path).exists()) {
+            Toast.makeText(this, "Could not access the selected RAP file", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        handleRapPicked(path);
+    }
+
+    private void handleRapPicked(String path) {
+        boolean ok = RPCS3.importRap(path);
+        Toast.makeText(this, ok ? "RAP license key imported" : "Failed to import RAP key",
+                Toast.LENGTH_SHORT).show();
+        mGamesFragment.reloadGames();
     }
 
     private String resolveDocIdToPath(String docId) {

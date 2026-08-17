@@ -177,16 +177,19 @@ public class GameRepository {
             return; // Don't recurse deeper into game directory
         }
 
-        File[] files = dir.listFiles();
-        if (files == null) return;
+		File[] files = dir.listFiles();
+		if (files == null) return;
 
-        for (File file : files) {
-            if (file.isDirectory()) {
-                findGameDirectories(file, candidates, depth + 1, maxDepth);
-            } else if (file.isFile() && (file.getName().endsWith(".iso") || file.getName().endsWith(".ISO"))) {
-                candidates.add(file);
-            }
-        }
+		for (File file : files) {
+			if (file.isDirectory()) {
+				findGameDirectories(file, candidates, depth + 1, maxDepth);
+			} else if (file.isFile()) {
+				String name = file.getName().toLowerCase();
+				if (name.endsWith(".iso") || name.endsWith(".pkg") || name.endsWith(".rap")) {
+					candidates.add(file);
+				}
+			}
+		}
     }
 
     private synchronized void loadGames() {
