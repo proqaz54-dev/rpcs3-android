@@ -15,12 +15,85 @@
 
 #include <android/log.h>
 #include <android/native_window.h>
-#include <thread>
+#include <atomic>
 #include <chrono>
+#include <mutex>
+#include <thread>
 
 #define LOG_TAG "RPCS3-ANDROID"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+namespace
+{
+	std::mutex g_window_mutex;
+	ANativeWindow* g_native_window = nullptr;
+	std::atomic<int> g_window_width{1280};
+	std::atomic<int> g_window_height{720};
+	std::atomic<f64> g_window_rate{60.0};
+}
+
+namespace android
+{
+	void set_native_window(ANativeWindow* window, int width, int height, f64 refresh_rate)
+	{
+		std::lock_guard lock(g_window_mutex);
+		if (g_native_window && g_native_window != window)
+		{
+			ANativeWindow_release(g_native_window);
+		}
+
+		g_native_window = window;
+		if (g_native_window)
+		{
+			ANativeWindow_acquire(g_native_window);
+			if (width > 0 && height > 0)
+			{
+				g_window_width = width;
+				g_window_height = height;
+			}
+			else
+			{
+				g_window_width = ANativeWindow_getWidth(g_native_window);
+				g_window_height = ANativeWindow_getHeight(g_native_window);
+			}
+			g_window_rate = refresh_rate;
+			LOGI("Native window set: %dx%d @ %.1f Hz", g_window_width.load(), g_window_height.load(), refresh_rate);
+		}
+	}
+
+	void release_native_window()
+	{
+		std::lock_guard lock(g_window_mutex);
+		if (g_native_window)
+		{
+			ANativeWindow_release(g_native_window);
+			g_native_window = nullptr;
+			LOGI("Native window released");
+		}
+	}
+
+	ANativeWindow* get_native_window()
+	{
+		std::lock_guard lock(g_window_mutex);
+		return g_native_window;
+	}
+
+	void set_window_size(int width, int height)
+	{
+		if (width > 0 && height > 0)
+		{
+			g_window_width = width;
+			g_window_height = height;
+		}
+	}
+
+	void send_pad_data(int /*digital1*/, int /*digital2*/, int /*lsX*/, int /*lsY*/, int /*rsX*/, int /*rsY*/, int /*l2Axis*/, int /*r2Axis*/)
+	{
+		// Routed through SDL or pad_thread
+	}
+}
 
 // Qt-free replacements for functions normally provided by the Qt layer.
 [[noreturn]] void report_fatal_error(std::string_view text, bool /*is_html*/, bool /*include_help_text*/)
@@ -52,39 +125,22 @@ namespace
 	{
 		class android_gs_frame : public GSFrameBase
 		{
-			ANativeWindow* m_window = nullptr;
-			int m_width = 720;
-			int m_height = 1280;
-			f64 m_display_rate = 60.0;
-
 		public:
 			android_gs_frame() = default;
 
-			void set_native_window(ANativeWindow* window, int width, int height, f64 rate)
-			{
-				if (m_window)
-				{
-					ANativeWindow_release(m_window);
-				}
-
-				m_window = window;
-				m_width = width;
-				m_height = height;
-				m_display_rate = rate;
-			}
+			~android_gs_frame() override = default;
 
 			void close() override
 			{
-				if (m_window)
-				{
-					ANativeWindow_release(m_window);
-					m_window = nullptr;
-				}
+				android::release_native_window();
 			}
 
 			void reset() override {}
 
-			bool shown() override { return m_window != nullptr; }
+			bool shown() override
+			{
+				return android::get_native_window() != nullptr;
+			}
 
 			void hide() override {}
 
@@ -100,26 +156,51 @@ namespace
 
 			void flip(draw_context_t /*ctx*/, bool /*skip_frame*/) override
 			{
-				// Rendering happens through the Vulkan command stream;
-				// the frame is presented by the swapchain on the window.
+				// Rendering happens via Vulkan swapchain presentation
 			}
 
-			int client_width() override { return m_width; }
+			int client_width() override
+			{
+				return g_window_width.load();
+			}
 
-			int client_height() override { return m_height; }
+			int client_height() override
+			{
+				return g_window_height.load();
+			}
 
-			f64 client_display_rate() override { return m_display_rate; }
+			f64 client_display_rate() override
+			{
+				return g_window_rate.load();
+			}
 
 			bool has_alpha() override { return false; }
 
 			display_handle_t handle() const override
 			{
-				if (!m_window)
+				// Wait briefly for native window to become available during startup
+				for (int i = 0; i < 50; ++i)
 				{
+					ANativeWindow* win = android::get_native_window();
+					if (win)
+					{
+						return std::get<ANativeWindow*>(display_handle_t{win});
+					}
+					if (Emu.IsStopped())
+					{
+						break;
+					}
+					std::this_thread::sleep_for(std::chrono::milliseconds(50));
+				}
+
+				ANativeWindow* win = android::get_native_window();
+				if (!win)
+				{
+					LOGW("android_gs_frame::handle(): native window is null");
 					return {};
 				}
 
-				return std::get<ANativeWindow*>(display_handle_t{m_window});
+				return std::get<ANativeWindow*>(display_handle_t{win});
 			}
 
 			bool can_consume_frame() const override { return false; }
@@ -139,16 +220,18 @@ EmuCallbacks android::create_android_callbacks()
 
 	cb.call_from_main_thread = [](std::function<void()> func, atomic_t<u32>*)
 	{
-		// TODO: marshal to the Android main thread via a Handler.
-		func();
+		if (func)
+		{
+			func();
+		}
 	};
 
-	cb.on_run = [](bool) { LOGI("on_run"); };
-	cb.on_pause = [] { LOGI("on_pause"); };
-	cb.on_resume = [] { LOGI("on_resume"); };
-	cb.on_stop = [] { LOGI("on_stop"); };
-	cb.on_ready = [] { LOGI("on_ready"); };
-	cb.on_missing_fw = [] { LOGI("on_missing_fw"); };
+	cb.on_run = [](bool) { LOGI("RPCS3 core: on_run"); };
+	cb.on_pause = [] { LOGI("RPCS3 core: on_pause"); };
+	cb.on_resume = [] { LOGI("RPCS3 core: on_resume"); };
+	cb.on_stop = [] { LOGI("RPCS3 core: on_stop"); };
+	cb.on_ready = [] { LOGI("RPCS3 core: on_ready"); };
+	cb.on_missing_fw = [] { LOGW("RPCS3 core: firmware missing"); };
 
 	cb.get_gs_frame = []() -> std::unique_ptr<GSFrameBase>
 	{
@@ -157,7 +240,6 @@ EmuCallbacks android::create_android_callbacks()
 
 	cb.get_audio = []() -> std::shared_ptr<AudioBackend>
 	{
-		// cubeb supports AAudio/OpenSL ES on Android.
 		return std::make_shared<CubebBackend>();
 	};
 
@@ -168,45 +250,37 @@ EmuCallbacks android::create_android_callbacks()
 
 	cb.get_msg_dialog = []() -> std::shared_ptr<MsgDialogBase>
 	{
-		return nullptr; // TODO: Java dialog bridge
+		return nullptr;
 	};
 
 	cb.get_osk_dialog = []() -> std::shared_ptr<OskDialogBase>
 	{
-		return nullptr; // TODO: Java dialog bridge
+		return nullptr;
 	};
 
 	cb.get_save_dialog = []() -> std::unique_ptr<SaveDialogBase>
 	{
-		return nullptr; // TODO: Java dialog bridge
+		return nullptr;
 	};
 
 	cb.get_sendmessage_dialog = []() -> std::shared_ptr<SendMessageDialogBase>
 	{
-		return nullptr; // TODO: not supported on Android
+		return nullptr;
 	};
 
 	cb.get_recvmessage_dialog = []() -> std::shared_ptr<RecvMessageDialogBase>
 	{
-		return nullptr; // TODO: not supported on Android
+		return nullptr;
 	};
 
 	cb.get_trophy_notification_dialog = []() -> std::unique_ptr<TrophyNotificationBase>
 	{
-		return nullptr; // TODO: not supported on Android
+		return nullptr;
 	};
 
-	cb.init_kb_handler = [] {
-		// No keyboard handler yet.
-	};
-
-	cb.init_mouse_handler = [] {
-		// No mouse handler yet.
-	};
-
-	cb.init_pad_handler = [](std::string_view) {
-		// TODO: SDL3 or native gamepad support later.
-	};
+	cb.init_kb_handler = [] {};
+	cb.init_mouse_handler = [] {};
+	cb.init_pad_handler = [](std::string_view) {};
 
 	cb.get_camera_handler = []() -> std::shared_ptr<camera_handler_base>
 	{
@@ -219,14 +293,8 @@ EmuCallbacks android::create_android_callbacks()
 	};
 
 	cb.play_sound = [](const std::string&, std::optional<f32>) {};
-	cb.get_image_info = [](const std::string&, std::string&, s32&, s32&, s32&)
-	{
-		return false;
-	};
-	cb.get_scaled_image = [](const std::string&, s32, s32, s32&, s32&, u8*, bool)
-	{
-		return false;
-	};
+	cb.get_image_info = [](const std::string&, std::string&, s32&, s32&, s32&) { return false; };
+	cb.get_scaled_image = [](const std::string&, s32, s32, s32&, s32&, u8*, bool) { return false; };
 	cb.resolve_path = [](std::string_view path) { return std::string{path}; };
 	cb.resolve_path_may_not_exist = [](std::string_view path) { return std::string{path}; };
 	cb.get_font_dirs = [] { return std::vector<std::string>{}; };
@@ -242,7 +310,10 @@ EmuCallbacks android::create_android_callbacks()
 
 	cb.update_emu_settings = [] {};
 	cb.save_emu_settings = [] {};
-	cb.close_gs_frame = [] {};
+	cb.close_gs_frame = []
+	{
+		android::release_native_window();
+	};
 	cb.on_emulation_stop_no_response = [](std::shared_ptr<atomic_t<bool>>, int) {};
 	cb.on_save_state_progress = [](std::shared_ptr<atomic_t<bool>>, stx::shared_ptr<utils::serial>, stx::atomic_ptr<std::string>*, std::shared_ptr<void>) {};
 	cb.enable_disc_eject = [](bool) {};

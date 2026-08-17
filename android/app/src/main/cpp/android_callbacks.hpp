@@ -1,23 +1,27 @@
-// Android implementation of EmuCallbacks - the interface between the
-// Qt-free emulator core (rpcs3_emu) and the Android platform layer.
-//
-// This replaces the desktop implementations in rpcs3/main_application.cpp
-// and rpcs3qt/ for the Android build.
-
 #pragma once
 
 #include "Emu/System.h"
-
+#include <android/native_window.h>
 #include <memory>
+#include <string_view>
 
 namespace android
 {
-	// Fills the EmuCallbacks structure with Android-compatible implementations.
-	// All Qt-based facilities (dialogs, gs_frame, audio, input) are replaced
-	// with Android equivalents:
-	//   - gs_frame      -> ANativeWindow-based frame (see gs_frame_android)
-	//   - dialogs       -> native no-op / Java-mediated implementations
-	//   - audio         -> cubeb backend (supports AAudio/OpenSL ES on Android)
-	//   - input         -> to be driven from Kotlin/Java touch and gamepad events
+	// Sets the active ANativeWindow for rendering
+	void set_native_window(ANativeWindow* window, int width, int height, f64 refresh_rate = 60.0);
+
+	// Releases the current ANativeWindow reference
+	void release_native_window();
+
+	// Gets the current ANativeWindow (acquired reference)
+	ANativeWindow* get_native_window();
+
+	// Updates window dimensions
+	void set_window_size(int width, int height);
+
+	// Injects gamepad / on-screen virtual pad inputs
+	void send_pad_data(int digital1, int digital2, int lsX, int lsY, int rsX, int rsY, int l2Axis, int r2Axis);
+
+	// Creates the EmuCallbacks structure wired to Android platform implementations
 	EmuCallbacks create_android_callbacks();
 }

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_games"
+        android:icon="@drawable/ic_play"
+        android:title="Games" />
+
+    <item
+        android:id="@+id/nav_drivers"
+        android:icon="@drawable/ic_palette"
+        android:title="GPU Drivers" />
+
+    <item
+        android:id="@+id/nav_settings"
+        android:icon="@drawable/ic_grid_on"
+        android:title="Settings" />
+
+    <item
+        android:id="@+id/nav_about"
+        android:icon="@drawable/ic_description"
+        android:title="About" />
+</menu>
