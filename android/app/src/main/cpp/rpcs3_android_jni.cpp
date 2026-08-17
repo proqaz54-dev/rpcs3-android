@@ -3,6 +3,7 @@
 #include <android/log.h>
 #include <cstring>
 #include <string>
+#include "SDL3/SDL.h"
 
 #define LOG_TAG "RPCS3"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -21,26 +22,32 @@ namespace
 		env->ReleaseStringUTFChars(str, chars);
 		return result;
 	}
-
-	JavaVM* g_jvm = nullptr;
-}
-
-extern "C" JNIEXPORT jint JNICALL
-JNI_OnLoad(JavaVM* vm, void* /*reserved*/)
-{
-	g_jvm = vm;
-	return JNI_VERSION_1_6;
 }
 
 // The NDK has no import for JNI_GetCreatedJavaVMs from ART; expose the
 // app's single JavaVM instead (rtmidi's Android backend queries it).
+// SDL already registers its JavaVM in JNI_OnLoad, so reuse it.
 extern "C" jint JNI_GetCreatedJavaVMs(JavaVM** vmBuf, jsize bufLen, jsize* nVMs)
 {
 	if (!vmBuf || bufLen < 1 || !nVMs)
 		return JNI_ERR;
 
-	*nVMs = g_jvm ? 1 : 0;
-	vmBuf[0] = g_jvm;
+	JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
+	if (!env)
+	{
+		*nVMs = 0;
+		return JNI_OK;
+	}
+
+	JavaVM* vm = nullptr;
+	if (env->GetJavaVM(&vm) != JNI_OK || !vm)
+	{
+		*nVMs = 0;
+		return JNI_OK;
+	}
+
+	*nVMs = 1;
+	vmBuf[0] = vm;
 	return JNI_OK;
 }
 
