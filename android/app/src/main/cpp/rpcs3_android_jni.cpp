@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "SDL3/SDL.h"
@@ -95,7 +96,7 @@ namespace
 			logs::listener::add(this);
 		}
 
-		void log(u64 /*stamp*/, const logs::message& msg, const std::string& /*prefix*/, const std::string& text) override
+		void log(u64 /*stamp*/, const logs::message& msg, std::string_view /*prefix*/, std::string_view text) override
 		{
 			int prio = ANDROID_LOG_DEBUG;
 			switch (static_cast<logs::level>(msg))
@@ -109,7 +110,7 @@ namespace
 			case logs::level::notice:  prio = ANDROID_LOG_DEBUG; break;
 			case logs::level::trace:   prio = ANDROID_LOG_VERBOSE; break;
 			}
-			__android_log_write(prio, "RPCS3-CORE", text.c_str());
+			__android_log_write(prio, "RPCS3-CORE", std::string(text).c_str());
 		}
 	};
 }
@@ -178,8 +179,8 @@ Java_net_rpcs3_android_RPCS3_initialize(JNIEnv* env, jclass /*clazz*/, jstring r
 		Emu.SetCallbacks(android::create_android_callbacks());
 
 		// Initialize default Vulkan settings for Android mobile
-		g_cfg.video.renderer = video_renderer::vulkan;
-		g_cfg.audio.renderer = audio_renderer::cubeb;
+		g_cfg.video.renderer.set(video_renderer::vulkan);
+		g_cfg.audio.renderer.set(audio_renderer::cubeb);
 
 		LOGI("RPCS3 initialized successfully. Config dir: %s, Cache dir: %s",
 			g_android_config_dir.c_str(), g_android_cache_dir.c_str());
