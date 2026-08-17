@@ -224,8 +224,16 @@ public class LauncherActivity extends AppCompatActivity implements GamesFragment
         if (docId.startsWith("primary:")) {
             return Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + docId.substring("primary:".length());
         }
+        if (docId.startsWith("raw:")) {
+            return docId.substring("raw:".length());
+        }
         if (docId.startsWith("/")) {
             return docId;
+        }
+        // Some providers expose a full filesystem path after a single colon
+        int sep = docId.indexOf(':');
+        if (sep > 0 && docId.substring(sep + 1).startsWith("/")) {
+            return docId.substring(sep + 1);
         }
         return null;
     }

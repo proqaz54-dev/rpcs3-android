@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#12121A"
+    android:background="@drawable/bg_rpcs3"
     tools:context=".ui.LauncherActivity">
 
     <com.google.android.material.appbar.AppBarLayout

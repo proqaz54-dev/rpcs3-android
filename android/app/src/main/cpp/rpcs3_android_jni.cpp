@@ -5,6 +5,7 @@
 #include "Emu/system_config.h"
 #include "Emu/system_utils.hpp"
 #include "Loader/PSF.h"
+#include "Loader/ISO.h"
 #include "Utilities/File.h"
 #include "util/sysinfo.hpp"
 #include "util/logs.hpp"
@@ -13,8 +14,10 @@
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 #include <unistd.h>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -83,6 +86,49 @@ namespace
 	}
 
 	bool g_initialized = false;
+
+	// Recursively locate a file by name inside an ISO image and return its
+	// path (without a leading slash, compatible with iso_archive::retrieve).
+	void find_iso_file(const iso_fs_node* node, const std::string& cur, std::string& out, const std::string& name)
+	{
+		if (!out.empty())
+			return;
+
+		if (!node->metadata.is_directory && node->metadata.name == name)
+		{
+			out = cur.empty() ? node->metadata.name : cur + "/" + node->metadata.name;
+			return;
+		}
+
+		for (const auto& child : node->children)
+		{
+			const std::string child_cur = cur.empty() ? child->metadata.name : cur + "/" + child->metadata.name;
+			find_iso_file(child.get(), child_cur, out, name);
+		}
+	}
+
+	bool extract_iso_file(iso_archive& archive, const std::string& iso_path, const std::string& out_path)
+	{
+		auto file = archive.open(iso_path);
+		if (!file)
+			return false;
+
+		const u64 sz = file->size();
+		if (sz == 0 || sz > 16 * 1024 * 1024)
+			return false;
+
+		std::vector<u8> buf(sz);
+		if (file->read(buf.data(), sz) != sz)
+			return false;
+
+		FILE* f = std::fopen(out_path.c_str(), "wb");
+		if (!f)
+			return false;
+
+		const size_t written = std::fwrite(buf.data(), 1, static_cast<size_t>(sz), f);
+		std::fclose(f);
+		return written == static_cast<size_t>(sz);
+	}
 }
 
 // Android log listener forwarding RPCS3 internal core logs to logcat
@@ -337,6 +383,68 @@ Java_net_rpcs3_android_RPCS3_scanGame(JNIEnv* env, jclass /*clazz*/, jstring gam
 	else if (path.ends_with(".sfo") || path.ends_with(".SFO"))
 	{
 		sfo_path = path;
+	}
+	else if (path.ends_with(".iso") || path.ends_with(".ISO") ||
+	         path.ends_with(".mdf") || path.ends_with(".MDF") ||
+	         path.ends_with(".img") || path.ends_with(".IMG"))
+	{
+		if (!is_iso_file(path))
+		{
+			return make_jstring(env, "{\"valid\":false,\"error\":\"not_iso\"}");
+		}
+
+		iso_archive archive(path);
+		if (!archive.is_valid())
+		{
+			return make_jstring(env, "{\"valid\":false,\"error\":\"iso_parse_failed\"}");
+		}
+
+		std::string iso_sfo;
+		find_iso_file(&archive.root(), "", iso_sfo, "PARAM.SFO");
+		if (iso_sfo.empty())
+		{
+			return make_jstring(env, "{\"valid\":false,\"error\":\"no_sfo\"}");
+		}
+
+		const psf::registry sfo = archive.open_psf(iso_sfo);
+		if (sfo.empty())
+		{
+			return make_jstring(env, "{\"valid\":false,\"error\":\"sfo_parse_failed\"}");
+		}
+
+		const std::string title_id = std::string(psf::get_string(sfo, "TITLE_ID"));
+		const std::string title = std::string(psf::get_string(sfo, "TITLE"));
+		const std::string category = std::string(psf::get_string(sfo, "CATEGORY"));
+		const std::string app_ver = std::string(psf::get_string(sfo, "APP_VER"));
+
+		// Extract the disc icon so it shows up in the game library
+		std::string icon_path;
+		std::string iso_icon;
+		find_iso_file(&archive.root(), "", iso_icon, "ICON0.PNG");
+		if (!iso_icon.empty())
+		{
+			std::string icon_dir = g_android_cache_dir + "icons/";
+			std::error_code ec;
+			std::filesystem::create_directories(icon_dir, ec);
+			const std::string out = icon_dir + (title_id.empty() ? std::to_string(std::hash<std::string>{}(path)) : title_id) + ".png";
+			if (extract_iso_file(archive, iso_icon, out))
+			{
+				icon_path = out;
+			}
+		}
+
+		std::string json = "{"
+			"\"valid\":true,"
+			"\"path\":\"" + escape_json(path) + "\","
+			"\"titleId\":\"" + escape_json(title_id) + "\","
+			"\"title\":\"" + escape_json(title) + "\","
+			"\"category\":\"" + escape_json(category) + "\","
+			"\"appVersion\":\"" + escape_json(app_ver) + "\","
+			"\"iconPath\":\"" + escape_json(icon_path) + "\","
+			"\"isDisc\":true"
+		"}";
+
+		return make_jstring(env, json);
 	}
 
 	if (sfo_path.empty())
