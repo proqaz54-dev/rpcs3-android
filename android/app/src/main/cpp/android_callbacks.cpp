@@ -15,10 +15,36 @@
 
 #include <android/log.h>
 #include <android/native_window.h>
+#include <thread>
+#include <chrono>
 
 #define LOG_TAG "RPCS3-ANDROID"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+// Qt-free replacements for functions normally provided by the Qt layer.
+[[noreturn]] void report_fatal_error(std::string_view text, bool /*is_html*/, bool /*include_help_text*/)
+{
+	LOGE("%.*s", static_cast<int>(text.size()), text.data());
+	std::abort();
+}
+
+void qt_events_aware_op(int repeat_duration_ms, std::function<bool()> wrapped_op)
+{
+	ensure(wrapped_op);
+
+	while (!wrapped_op())
+	{
+		if (repeat_duration_ms == 0)
+		{
+			std::this_thread::yield();
+		}
+		else
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(repeat_duration_ms));
+		}
+	}
+}
 
 namespace
 {

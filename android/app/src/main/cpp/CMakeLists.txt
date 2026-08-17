@@ -49,6 +49,11 @@ target_link_libraries(rpcs3_android PRIVATE
     log
     android
     z
+    OpenSLES
+    amidi
+    EGL
+    GLESv2
+    GLESv3
 )
 
 # FFmpeg NEON asm (tx_float_neon.S) addresses ff_tx_tab_* via adrp;

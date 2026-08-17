@@ -21,6 +21,27 @@ namespace
 		env->ReleaseStringUTFChars(str, chars);
 		return result;
 	}
+
+	JavaVM* g_jvm = nullptr;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+JNI_OnLoad(JavaVM* vm, void* /*reserved*/)
+{
+	g_jvm = vm;
+	return JNI_VERSION_1_6;
+}
+
+// The NDK has no import for JNI_GetCreatedJavaVMs from ART; expose the
+// app's single JavaVM instead (rtmidi's Android backend queries it).
+extern "C" jint JNI_GetCreatedJavaVMs(JavaVM** vmBuf, jsize bufLen, jsize* nVMs)
+{
+	if (!vmBuf || bufLen < 1 || !nVMs)
+		return JNI_ERR;
+
+	*nVMs = g_jvm ? 1 : 0;
+	vmBuf[0] = g_jvm;
+	return JNI_OK;
 }
 
 extern "C" JNIEXPORT jint JNICALL
